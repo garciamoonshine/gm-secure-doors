@@ -34,13 +34,88 @@ Deliberately **not** touched: trapdoors, fence gates, and other add-ons' doors (
 
 ## Install
 
-1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.0.0/GM-Secure-Doors-v1.0.0.mcaddon) and open it —
-   Minecraft imports both packs.
-2. Apply **GM Secure Doors** behaviour + resource pack to your world.
-3. Craft a **Door Key**: gold ingot over iron nugget (shape: `A` / `B`), or take one from creative.
+1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.0.0/GM-Secure-Doors-v1.0.0.mcaddon)
+   and open it — Minecraft imports both packs at once.
+2. In your world settings, activate **GM Secure Doors** on both tabs: the **behaviour pack** and the
+   **resource pack**.
+3. On a dedicated server, add both pack folders to `behavior_packs/` and `resource_packs/`, then add
+   their UUIDs to `world_behavior_packs.json` / `world_resource_packs.json`. New players receive the
+   packs automatically on join.
 
 Requires Minecraft Bedrock **1.21.90+** (Script API `@minecraft/server 2.0.0`). Tested on a
 dedicated server running **1.26.52**.
+
+## Crafting the Door Key
+
+One **gold ingot** on top, one **iron nugget** underneath — a vertical two-item recipe in any
+crafting grid (including the 2×2 inventory grid).
+
+```
+[ gold ingot  ]
+[ iron nugget ]
+        ↓
+   Door Key  ×1
+```
+
+It also appears in the creative inventory under **Equipment**. The item has a gold/silver key icon
+and holds exactly **one** code, so each door can have its own key if you prefer.
+
+## Locking, opening, releasing
+
+1. **Sneak + tap** the door while holding a Door Key. You get
+   `Door Lock registered - only this key (K#a1b2c) opens it now.`
+   The key is stamped with that code in its lore, and the door becomes a secure block that looks
+   exactly like the door you placed.
+2. **Tap** the door with that key to open, **tap again** to close.
+3. Anyone without the key gets `Doors Locked` (empty hand) or `Wrong key` (a different coded key),
+   and the door does not move.
+4. **Sneak + tap** with the same key to release it — the door becomes an ordinary vanilla door
+   again, in the same position and orientation.
+
+A locked door cannot be broken (creative mode can) or destroyed by explosions, and redstone can only
+close it — never open it.
+
+## Copying a key (for family members)
+
+Hold the **coded key in your main hand** and a **blank Door Key in your offhand**, then use the item.
+The blank key receives the same code and you'll see `Copied K#a1b2c`.
+
+Important: the code lives on the *item*, not the player — so give the copy to whoever should have
+access, and keep the original yourself. A blank key is just a Door Key that has never locked a door
+(any newly crafted one).
+
+## How it works
+
+The short version: **a locked door stops being a vanilla door, and becomes the add-on's own door
+block that happens to use the vanilla texture.**
+
+Vanilla doors are opened by the game itself. A script can cancel that interaction, but the client
+has already animated its predicted swing and — because the server's block state never changed — no
+corrective update is sent. The result is a door that visibly opens for half a second every time
+somebody taps it while it's locked. There is no way around that from script alone, so the pack
+swaps the door out for a custom block, for which the game has no hand-open path at all. Nothing to
+predict, nothing to flicker.
+
+The moving parts:
+
+- **Two custom blocks per material** (`gm:sdoor_<material>_lower` and `_upper`) carrying the states
+  `gm:dir`, `gm:hinge`, `gm:open`, `gm:upper`, `gm:mirror`, `gm:swing`, `gm:omirror`.
+- **One geometry with 24 bones.** `bone_visibility` uses Molang block-state queries to show only the
+  panel that matches the current state; `permutations` swap the collision and selection boxes to
+  match, so an open door is genuinely walk-through.
+- **Locking** reads the vanilla door's `minecraft:cardinal_direction`, `door_hinge_bit` and legacy
+  integer `direction` state, plus its material, and records them. It then rebuilds *both halves* as
+  secure blocks.
+- **Opening** is a single block-state write (`gm:open = true`), which is also what keeps the door
+  from ever being opened by the game.
+- **Releasing** writes the recorded values back verbatim, so the door returns exactly as it was —
+  same facing, same hinge, same texture, same position. The values are re-asserted a couple of ticks
+  later, because vanilla re-derives a door's hinge when it is rebuilt next to its double-door partner.
+- **Blocks carry `tag:door`**, so vanilla's double-door pairing still sees a door beside a door and
+  leaves the neighbour's hinge alone.
+- **Key codes** are stored in the item's lore (`K#xxxxx`) and cross-checked against the lock record
+  kept in world dynamic properties, so the record survives restarts; copies are made by writing the
+  same code to a second key.
 
 ## How it works
 
