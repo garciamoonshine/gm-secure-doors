@@ -117,18 +117,6 @@ The moving parts:
   kept in world dynamic properties, so the record survives restarts; copies are made by writing the
   same code to a second key.
 
-## How it works
-
-- Each material has two custom blocks (`gm:sdoor_<material>_lower` / `_upper`) with states
-  `gm:dir`, `gm:hinge`, `gm:open`, `gm:upper`, `gm:mirror`, `gm:swing`, `gm:omirror`.
-- The model is **one geometry with 24 bones**; `bone_visibility` (Molang block-state queries) picks
-  the correct panel for the state, and `permutations` supply the matching collision box.
-- Locking reads the vanilla door's `minecraft:cardinal_direction`, `door_hinge_bit` and legacy
-  integer `direction`, then rebuilds both halves as secure blocks. Releasing writes the recorded
-  values back verbatim, so the door returns exactly as it was.
-- Blocks carry `tag:door`, so vanilla's double-door pairing logic still sees a door beside a door
-  and doesn't flip the neighbour's hinge.
-
 ## How hard this was
 
 This add-on took far longer than its size suggests, because Bedrock's door data model is full of
