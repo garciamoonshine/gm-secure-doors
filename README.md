@@ -9,7 +9,7 @@ dropped, nothing is added, nothing is placed.
 
 ![GM Secure Doors](docs/hero.jpg)
 
-[garciamoonshine.com](https://garciamoonshine.com) · [Download the .mcaddon](dist/GM-Secure-Doors-v1.0.0.mcaddon)
+[garciamoonshine.com](https://garciamoonshine.com) · [Download v1.0.0](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.0.0/GM-Secure-Doors-v1.0.0.mcaddon) · [Devlog post](https://garciamoonshine.com/blog/gm-secure-doors-coded-keys-for-vanilla-minecraft-doors/)
 
 ---
 
@@ -34,7 +34,7 @@ Deliberately **not** touched: trapdoors, fence gates, and other add-ons' doors (
 
 ## Install
 
-1. Download [`dist/GM-Secure-Doors-v1.0.0.mcaddon`](dist/GM-Secure-Doors-v1.0.0.mcaddon) and open it —
+1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.0.0/GM-Secure-Doors-v1.0.0.mcaddon) and open it —
    Minecraft imports both packs.
 2. Apply **GM Secure Doors** behaviour + resource pack to your world.
 3. Craft a **Door Key**: gold ingot over iron nugget (shape: `A` / `B`), or take one from creative.
