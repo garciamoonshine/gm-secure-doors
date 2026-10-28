@@ -1,0 +1,442 @@
+{
+  "format_version": "1.21.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "gmsd:door_acacia_lower",
+      "menu_category": {
+        "category": "none"
+      },
+      "states": {
+        "gmsd:dir": [
+          "north",
+          "east",
+          "south",
+          "west"
+        ],
+        "gmsd:hinge": [
+          false,
+          true
+        ],
+        "gmsd:open": [
+          false,
+          true
+        ],
+        "gmsd:upper": [
+          false,
+          true
+        ],
+        "gmsd:mirror": [
+          false,
+          true
+        ],
+        "gmsd:swing": [
+          false,
+          true
+        ],
+        "gmsd:omirror": [
+          false,
+          true
+        ]
+      }
+    },
+    "components": {
+      "minecraft:geometry": {
+        "identifier": "geometry.gmsd_door",
+        "bone_visibility": {
+          "c_north_n": "q.block_state('gmsd:dir')=='north' && !q.block_state('gmsd:open') && !q.block_state('gmsd:mirror')",
+          "c_north_m": "q.block_state('gmsd:dir')=='north' && !q.block_state('gmsd:open') && q.block_state('gmsd:mirror')",
+          "o_north_a_n": "q.block_state('gmsd:dir')=='north' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_north_a_m": "q.block_state('gmsd:dir')=='north' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "o_north_b_n": "q.block_state('gmsd:dir')=='north' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_north_b_m": "q.block_state('gmsd:dir')=='north' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "c_east_n": "q.block_state('gmsd:dir')=='east' && !q.block_state('gmsd:open') && !q.block_state('gmsd:mirror')",
+          "c_east_m": "q.block_state('gmsd:dir')=='east' && !q.block_state('gmsd:open') && q.block_state('gmsd:mirror')",
+          "o_east_a_n": "q.block_state('gmsd:dir')=='east' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_east_a_m": "q.block_state('gmsd:dir')=='east' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "o_east_b_n": "q.block_state('gmsd:dir')=='east' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_east_b_m": "q.block_state('gmsd:dir')=='east' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "c_south_n": "q.block_state('gmsd:dir')=='south' && !q.block_state('gmsd:open') && !q.block_state('gmsd:mirror')",
+          "c_south_m": "q.block_state('gmsd:dir')=='south' && !q.block_state('gmsd:open') && q.block_state('gmsd:mirror')",
+          "o_south_a_n": "q.block_state('gmsd:dir')=='south' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_south_a_m": "q.block_state('gmsd:dir')=='south' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "o_south_b_n": "q.block_state('gmsd:dir')=='south' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_south_b_m": "q.block_state('gmsd:dir')=='south' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "c_west_n": "q.block_state('gmsd:dir')=='west' && !q.block_state('gmsd:open') && !q.block_state('gmsd:mirror')",
+          "c_west_m": "q.block_state('gmsd:dir')=='west' && !q.block_state('gmsd:open') && q.block_state('gmsd:mirror')",
+          "o_west_a_n": "q.block_state('gmsd:dir')=='west' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_west_a_m": "q.block_state('gmsd:dir')=='west' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')",
+          "o_west_b_n": "q.block_state('gmsd:dir')=='west' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && !q.block_state('gmsd:omirror')",
+          "o_west_b_m": "q.block_state('gmsd:dir')=='west' && q.block_state('gmsd:open') && q.block_state('gmsd:swing') && q.block_state('gmsd:omirror')"
+        }
+      },
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "gmsd_acacia_lower",
+          "render_method": "alpha_test_single_sided_to_opaque"
+        }
+      },
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 3.0
+      },
+      "minecraft:destructible_by_explosion": false,
+      "minecraft:light_dampening": 0,
+      "minecraft:map_color": "#8b6a3f",
+      "minecraft:custom_components": [
+        "gmsd:door"
+      ],
+      "tag:door": {},
+      "tag:wood": {},
+      "tag:one_way_collidable": {}
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('gmsd:dir')=='north' && !q.block_state('gmsd:open')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='north' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              5
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              5
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='north' && q.block_state('gmsd:open') && q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='east' && !q.block_state('gmsd:open')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              5
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              5
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='east' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              5,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              5,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='east' && q.block_state('gmsd:open') && q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='south' && !q.block_state('gmsd:open')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              5,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              5,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='south' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='south' && q.block_state('gmsd:open') && q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              5
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              5
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='west' && !q.block_state('gmsd:open')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              16,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='west' && q.block_state('gmsd:open') && !q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('gmsd:dir')=='west' && q.block_state('gmsd:open') && q.block_state('gmsd:swing')",
+        "components": {
+          "minecraft:collision_box": {
+            "origin": [
+              5,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              5,
+              0,
+              -8
+            ],
+            "size": [
+              3,
+              16,
+              16
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

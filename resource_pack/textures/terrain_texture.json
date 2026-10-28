@@ -1,0 +1,50 @@
+{
+  "resource_pack_name": "gm_secure_doors",
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "gmsd_oak_lower": {
+      "textures": "textures/blocks/door_wood_lower"
+    },
+    "gmsd_oak_upper": {
+      "textures": "textures/blocks/door_wood_upper"
+    },
+    "gmsd_spruce_lower": {
+      "textures": "textures/blocks/door_spruce_lower"
+    },
+    "gmsd_spruce_upper": {
+      "textures": "textures/blocks/door_spruce_upper"
+    },
+    "gmsd_birch_lower": {
+      "textures": "textures/blocks/door_birch_lower"
+    },
+    "gmsd_birch_upper": {
+      "textures": "textures/blocks/door_birch_upper"
+    },
+    "gmsd_jungle_lower": {
+      "textures": "textures/blocks/door_jungle_lower"
+    },
+    "gmsd_jungle_upper": {
+      "textures": "textures/blocks/door_jungle_upper"
+    },
+    "gmsd_acacia_lower": {
+      "textures": "textures/blocks/door_acacia_lower"
+    },
+    "gmsd_acacia_upper": {
+      "textures": "textures/blocks/door_acacia_upper"
+    },
+    "gmsd_dark_oak_lower": {
+      "textures": "textures/blocks/door_dark_oak_lower"
+    },
+    "gmsd_dark_oak_upper": {
+      "textures": "textures/blocks/door_dark_oak_upper"
+    },
+    "gmsd_iron_lower": {
+      "textures": "textures/blocks/door_iron_lower"
+    },
+    "gmsd_iron_upper": {
+      "textures": "textures/blocks/door_iron_upper"
+    }
+  }
+}

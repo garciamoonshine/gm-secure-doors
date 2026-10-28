@@ -1,0 +1,9 @@
+{
+  "resource_pack_name": "gm_secure_doors",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "gmsd_door_key": {
+      "textures": "textures/items/gmsd_door_key"
+    }
+  }
+}
