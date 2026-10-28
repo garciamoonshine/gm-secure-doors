@@ -3,10 +3,10 @@
     "header": {
         "name": "GM Secure Doors [RP]",
         "description": "Models + texture bindings for GM Secure Doors.",
-        "uuid": "4b78bdef-aa56-454e-b11b-7c634062e7d7",
+        "uuid": "da177829-b07c-405b-a5fc-71f6aceddbde",
         "version": [
             1,
-            0,
+            2,
             0
         ],
         "min_engine_version": [
@@ -23,10 +23,10 @@
     "modules": [
         {
             "type": "resources",
-            "uuid": "d84e59d8-8f9f-4279-9d08-c6a3557bfb4a",
+            "uuid": "5421f53e-667c-42f1-a8e7-845fc6db16ed",
             "version": [
                 1,
-                0,
+                2,
                 0
             ]
         }

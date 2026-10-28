@@ -23,7 +23,8 @@ function rotate(dir, deg) {
 const NS = "gmsd";
 const KEY_ID = "gmsd:door_key";
 const STORE = "gmsd:locks";
-const TUNE = "gmsd:tune";        // { "<pos>": {mirror, swing} } - kept forever, survives release
+const TUNE = "gmsd:tune";
+const FIXES = "gmsd:fixes";     // per-door hardcoded overrides: { "<pos>": { mirror, omirror, swing } }        // { "<pos>": {mirror, swing} } - kept forever, survives release
 const MATS = ["oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "iron"];
 const DIRS = ["north", "east", "south", "west"];
 const NUM2DIR = { 0: "south", 1: "west", 2: "north", 3: "east" };  // measured on the real doors
@@ -42,12 +43,26 @@ function readTune() {
     catch { return {}; }
 }
 const writeTune = (o) => { try { world.setDynamicProperty(TUNE, JSON.stringify(o)); } catch { } };
+function readFixes() {
+    try { const r = world.getDynamicProperty(FIXES); const o = r ? JSON.parse(r) : {}; return o && typeof o === "object" ? o : {}; }
+    catch { return {}; }
+}
+const writeFixes = (o) => { try { world.setDynamicProperty(FIXES, JSON.stringify(o)); } catch { } };
+/** apply any hardcoded override for this door position */
+function withFixes(pose, blockKey) {
+    const f = readFixes()[blockKey];
+    if (!f) return pose;
+    return { mirror: f.mirror ?? pose.mirror,
+             omirror: f.omirror ?? pose.omirror,
+             swing: f.swing ?? pose.swing };
+}
 const posKey = (b) => `${Math.floor(b.location.x)},${Math.floor(b.location.y)},${Math.floor(b.location.z)}|${b.dimension.id}`;
 /** stable key for a door: always its LOWER half, whichever half was tapped */
 function doorTuneKey(block) {
     const lo = (st(block, "upper_block_bit") === true || st(block, NS + ":upper") === true) ? block.below() : block;
     return posKey(lo || block);
 }
+function blockOf(dim, c) { try { return dim.getBlock({ x: c[0], y: c[1], z: c[2] }); } catch { return undefined; } }
 function keyOf(b) {
     return `${b.dimension.id}|${Math.floor(b.location.x)},${Math.floor(b.location.y)},${Math.floor(b.location.z)}`;
 }
@@ -247,6 +262,7 @@ system.beforeEvents.startup.subscribe((init) => {
 function handleSecureTap(player, block) {
     const meta = store()[keyOf(block)];
     const key = heldKey(player);
+    if (meta) { try { healDoor(block.dimension.id, [Math.floor(block.location.x), Math.floor(block.location.y), Math.floor(block.location.z)], meta); } catch { } }
 
     // sneak + key = release (no air tapping anywhere)
     if (player.isSneaking && key) {
@@ -277,6 +293,43 @@ function handleSecureTap(player, block) {
     snd(block, nowOpen ? LOCKED_SND : OPEN_SND, 0.5, 1.2);
     return true;
 }
+
+
+/* ------------------------------------------------------------------ appearance rules
+   Closed panel sits on R(cardinal). The mirror table below was calibrated in game against
+   eight vanilla oak doors covering every cardinal/hinge combination, then checked against all
+   eight orientations on spruce.  Non-oak textures are mirrored relative to oak's, but only the
+   east-facing hinge=true case actually needs the flip (measured).
+   The open panel is mirrored for south/west facing doors only.  Swing always follows the hinge. */
+const CLOSED_MIRROR = { north: { f: false, t: true },  east: { f: true, t: true },
+                        south: { f: true, t: false }, west: { f: false, t: true } };
+const OPEN_MIRROR = { north: false, east: false, south: true, west: true };
+function computePose(mat, cardinal, hinge) {
+    const hingeOn = hinge === true;
+    // Measured on this build's texture source (vanilla atlas references): of the eight spruce
+    // orientations, only east-facing hinge=true needs the material flip; everything else must
+    // use the oak-calibrated table unchanged.
+    const matFlip = mat !== "oak" && cardinal === "east" && hingeOn;
+    return {
+        mirror: (CLOSED_MIRROR[cardinal]?.[hingeOn ? "t" : "f"] ?? true) !== matFlip,
+        omirror: OPEN_MIRROR[cardinal] ?? false,
+        swing: hingeOn,
+    };
+}
+
+/* self test: scriptevent gmsd:selftest -> logs the pose for every cardinal/hinge/material */
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    if (ev.id !== "gmsd:selftest") return;
+    for (const mat of ["oak", "spruce"]) {
+        for (const c of ["north", "east", "south", "west"]) {
+            for (const h of [false, true]) {
+                const p = computePose(mat, c, h);
+                console.warn(`[GMSD] selftest ${mat} ${c} hinge=${h} -> mirror=${p.mirror} swing=${p.swing} omirror=${p.omirror}`);
+            }
+        }
+    }
+    console.warn("[GMSD] selftest complete");
+}, { namespaces: ["gmsd"] });
 
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const player = ev.player;
@@ -313,16 +366,12 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         const closedEdge = CLOCK[cardinal] ?? "east";
         const xThin = closedEdge === "east" || closedEdge === "west";
         // ---- lookup tables calibrated against eight vanilla doors ------------------------
-        const CLOSED_MIRROR = { north: { f: false, t: true }, east: { f: true, t: true },
-                                south: { f: true, t: false }, west: { f: false, t: true } };
-        const OPEN_MIRROR = { north: false, east: false, south: true, west: true };
+
         // oak uses the vanilla "door_wood_*" texture; every other material uses
         // "door_<material>_*" which is drawn mirrored relative to it - so non-oak doors need
         // the opposite closed-pose flip (measured on spruce/iron; open pose is unaffected)
-        const matFlip = mat !== "oak";
-        const mirrorDefault = (CLOSED_MIRROR[cardinal]?.[hingeVal ? "t" : "f"] ?? true) !== matFlip;
-        const omirrorDefault = OPEN_MIRROR[cardinal] ?? false;
-        const swingDefault = hingeVal;
+        const pose = withFixes(computePose(mat, cardinal, hingeVal), doorTuneKey(low));
+        const mirrorDefault = pose.mirror, omirrorDefault = pose.omirror, swingDefault = pose.swing;
         const tune = readTune()[doorTuneKey(low)] || {};
         const meta = { code, mat, cardinal, dir: rotate(cardinal, rotOf()), legacyDir: legacy,
                        hinge: hingeVal,
@@ -495,5 +544,187 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
 
 
 // console repair: rebuild vanilla doors from our own blocks (fixes orphans left by old builds)
+
+
+/* ---- one-time clean-up of pose tuning saved by earlier builds ------------------------- */
+system.runTimeout(() => {
+    try {
+        if (world.getDynamicProperty("gmsd:tuneCleared") === true) return;
+        const had = Object.keys(readTune()).length;
+        writeTune({});
+        world.setDynamicProperty("gmsd:tuneCleared", true);
+        console.warn(`[GMSD] cleared ${had} stale tuning record(s); defaults now apply`);
+    } catch (e) { console.warn("[GMSD] tune cleanup failed: " + e); }
+}, 60);
+
+// debug: scriptevent gmsd:tunedump -> logs every stored tuning entry
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    if (ev.id !== "gmsd:tunedump") return;
+    const t = readTune();
+    const keys = Object.keys(t);
+    console.warn(`[GMSD] tuning records: ${keys.length}`);
+    for (const k of keys) console.warn(`[GMSD]   ${k} -> mirror=${t[k].mirror} swing=${t[k].swing} omirror=${t[k].omirror}`);
+}, { namespaces: ["gmsd"] });
+
+
+/* ---- scriptevent gmsd:repaint <radius> : recompute poses for locked doors nearby --------- */
+/* ---- scriptevent gmsd:inspect <radius> : log every nearby locked door's full state ------ */
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    if (ev.id !== "gmsd:repaint" && ev.id !== "gmsd:inspect") return;
+    const pl = ev.sourceEntity ?? world.getAllPlayers()[0];
+    if (!pl) { console.warn("[GMSD] needs a player"); return; }
+    const radius = Math.max(1, Math.min(64, parseInt((ev.message || "12").trim(), 10) || 12));
+    const dim = pl.dimension, o = pl.location;
+    const db = store();
+    let n = 0;
+    for (const id of Object.keys(db)) {
+        const parts = id.split("|");
+        if (parts[0] !== dim.id) continue;
+        const c = parts[1].split(",").map(Number);
+        if (Math.hypot(c[0] - o.x, c[1] - o.y, c[2] - o.z) > radius) continue;
+        const rec = db[id];
+        if (st(blockOf(dim, c), NS + ":upper") === true) continue;      // handle the lower half only
+        const pose = computePose(rec.mat, rec.cardinal, rec.hinge === true);
+        if (ev.id === "gmsd:inspect") {
+            console.warn(`[GMSD] inspect ${c.join(",")} mat=${rec.mat} cardinal=${rec.cardinal} hinge=${rec.hinge} -> mirror=${pose.mirror} swing=${pose.swing} omirror=${pose.omirror}`);
+            continue;
+        }
+        try {
+            const b = blockOf(dim, c);
+            if (b && mine(b)) {
+                for (const half of minePair(b)) {
+                    half.setPermutation(half.permutation
+                        .withState(NS + ":mirror", pose.mirror === true)
+                        .withState(NS + ":swing", pose.swing === true)
+                        .withState(NS + ":omirror", pose.omirror === true));
+                }
+                db[id] = { ...rec, mirror: pose.mirror, swing: pose.swing, omirror: pose.omirror };
+                for (const half of minePair(b)) {
+                    const rid = keyOf(half);
+                    if (db[rid]) db[rid] = { ...db[rid], mirror: pose.mirror, swing: pose.swing, omirror: pose.omirror };
+                }
+                n++;
+            }
+        } catch (e) { console.warn("[GMSD] repaint failed: " + e); }
+    }
+    if (ev.id === "gmsd:repaint") { save(db); console.warn(`[GMSD] repainted ${n} door(s)`); try { pl.sendMessage(`§aRepainted ${n} door(s)`); } catch { } }
+}, { namespaces: ["gmsd"] });
+
+
+/* ---- per-door hardcoded fixes, driven from the server console (no player required) ------
+   scriptevent gmsd:setmirror  <x> <y> <z> <true|false>
+   scriptevent gmsd:flipmirror <x> <y> <z>
+   scriptevent gmsd:fixlist                                                              */
+function applyPoseToDoor(dimId, c, pose) {
+    try {
+        const dim = world.getDimension(dimId);
+        const b = dim.getBlock({ x: c[0], y: c[1], z: c[2] });
+        if (!b || !mine(b)) return false;
+        for (const half of minePair(b)) {
+            half.setPermutation(half.permutation
+                .withState(NS + ":mirror", pose.mirror === true)
+                .withState(NS + ":swing", pose.swing === true)
+                .withState(NS + ":omirror", pose.omirror === true));
+        }
+        return true;
+    } catch { return false; }
+}
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    if (ev.id !== "gmsd:setmirror" && ev.id !== "gmsd:flipmirror" && ev.id !== "gmsd:fixlist") return;
+    const fixes = readFixes();
+
+    if (ev.id === "gmsd:fixlist") {
+        const keys = Object.keys(fixes);
+        console.warn(`[GMSD] hardcoded fixes: ${keys.length}`);
+        for (const k of keys) console.warn(`[GMSD]   ${k} -> mirror=${fixes[k].mirror} omirror=${fixes[k].omirror} swing=${fixes[k].swing}`);
+        return;
+    }
+
+    const parts = (ev.message || "").trim().split(/\s+/);
+    const nums = parts.filter((x) => /^-?\d+$/.test(x)).map(Number);
+    if (nums.length < 3) { console.warn("[GMSD] need x y z"); return; }
+    const [x, y, z] = nums;
+    const dimId = ev.sourceEntity?.dimension?.id ?? "minecraft:overworld";
+    const key = `${x},${y},${z}|${dimId}`;
+
+    // current value: from the store, or from the block itself
+    const db = store();
+    let rec = db[key] || db[`${x},${y+1},${z}|${dimId}`] || db[`${x},${y-1},${z}|${dimId}`];
+    let current = fixes[key]?.mirror;
+    if (current === undefined && rec) current = computePose(rec.mat, rec.cardinal, rec.hinge === true).mirror;
+    if (current === undefined) {
+        try {
+            const b = world.getDimension(dimId).getBlock({ x, y, z });
+            if (b && mine(b)) current = st(b, NS + ":mirror") === true;
+        } catch { }
+    }
+    if (current === undefined) { console.warn(`[GMSD] no door/lock found at ${x},${y},${z}`); return; }
+
+    let value;
+    if (ev.id === "gmsd:flipmirror") value = !current;
+    else {
+        const flag = parts.find((p) => /^(true|false)$/i.test(p));
+        value = flag ? flag.toLowerCase() === "true" : !current;
+    }
+    fixes[key] = { ...(fixes[key] || {}), mirror: value };
+    writeFixes(fixes);
+
+    // apply now if the chunk is loaded, and update the record
+    const applied = applyPoseToDoor(dimId, [x, y, z], { ...(rec ? computePose(rec.mat, rec.cardinal, rec.hinge === true) : {}), mirror: value, swing: rec ? rec.hinge === true : false, omirror: rec ? (computePose(rec.mat, rec.cardinal, rec.hinge === true).omirror) : false });
+    if (rec) {
+        for (const id of Object.keys(db)) {
+            const pp = id.split("|"); if (pp[0] !== dimId) continue;
+            const cc = pp[1].split(",").map(Number);
+            if (cc[0] === x && Math.abs(cc[2] - z) <= 1 && Math.abs(cc[1] - y) <= 1) db[id] = { ...db[id], mirror: value };
+        }
+        save(db);
+    }
+    console.warn(`[GMSD] fix ${key} mirror=${value} (previous ${current}, applied_now=${applied})`);
+}, { namespaces: ["gmsd"] });
+
+
+/** recompute a locked door's pose from its record + current rules, and apply it */
+function healDoor(dimId, c, rec) {
+    try {
+        const dim = world.getDimension(dimId);
+        const b = dim.getBlock({ x: c[0], y: c[1], z: c[2] });
+        if (!b || !mine(b)) return false;
+        if (st(b, NS + ":upper") === true) return false;               // lower half only
+        const pose = withFixes(computePose(rec.mat, rec.cardinal, rec.hinge === true), `${c[0]},${c[1]},${c[2]}|${dimId}`);
+        let changed = false;
+        for (const half of minePair(b)) {
+            const cur = { m: st(half, NS + ":mirror") === true, s: st(half, NS + ":swing") === true, o: st(half, NS + ":omirror") === true };
+            if (cur.m !== pose.mirror || cur.s !== pose.swing || cur.o !== pose.omirror) changed = true;
+            half.setPermutation(half.permutation
+                .withState(NS + ":mirror", pose.mirror === true)
+                .withState(NS + ":swing", pose.swing === true)
+                .withState(NS + ":omirror", pose.omirror === true));
+        }
+        return changed;
+    } catch { return false; }
+}
+
+/** background self-heal: fix locked doors near online players, a few per pass */
+system.runInterval(() => {
+    const players = world.getAllPlayers();
+    if (!players.length) return;
+    const db = store();
+    const ids = Object.keys(db);
+    if (!ids.length) return;
+    let fixed = 0;
+    for (const id of ids) {
+        if (fixed >= 4) break;                                        // stay cheap
+        const parts = id.split("|");
+        const dimId = parts[0];
+        const c = parts[1].split(",").map(Number);
+        const near = players.some((p) => {
+            if (p.dimension.id !== dimId) return false;
+            const l = p.location;
+            return Math.abs(l.x - c[0]) <= 48 && Math.abs(l.z - c[2]) <= 48 && Math.abs(l.y - c[1]) <= 24;
+        });
+        if (!near) continue;
+        if (healDoor(dimId, c, db[id])) { fixed++; console.warn(`[GMSD] self-heal ${parts[1]}`); }
+    }
+}, 60);
 
 console.warn("[GMSD] GM Secure Doors ready - vanilla doors only, QB Doors untouched.");

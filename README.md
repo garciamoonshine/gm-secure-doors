@@ -9,7 +9,7 @@ dropped, nothing is added, nothing is placed.
 
 ![GM Secure Doors](docs/hero.jpg)
 
-[garciamoonshine.com](https://garciamoonshine.com) · [Download v1.0.0](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.0.0/GM-Secure-Doors-v1.0.0.mcaddon) · [Devlog post](https://garciamoonshine.com/blog/gm-secure-doors-coded-keys-for-vanilla-minecraft-doors/)
+[garciamoonshine.com](https://garciamoonshine.com) · [Download v1.2.0](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.2.0/GM-Secure-Doors-v1.2.0.mcaddon) · [Devlog post](https://garciamoonshine.com/blog/gm-secure-doors-coded-keys-for-vanilla-minecraft-doors/)
 
 ---
 
@@ -34,7 +34,7 @@ Deliberately **not** touched: trapdoors, fence gates, and other add-ons' doors (
 
 ## Install
 
-1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.0.0/GM-Secure-Doors-v1.0.0.mcaddon)
+1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.2.0/GM-Secure-Doors-v1.2.0.mcaddon)
    and open it — Minecraft imports both packs at once.
 2. In your world settings, activate **GM Secure Doors** on both tabs: the **behaviour pack** and the
    **resource pack**.
@@ -156,6 +156,13 @@ lookup tables (`CLOSED_MIRROR`, `OPEN_MIRROR`) plus `swing = hinge`.
   vanilla door textures (`textures/blocks/door_*`), so nothing copyrighted is redistributed. The
   base game must be installed, which it always is.
 - Not affiliated with Mojang or Microsoft.
+
+## Changelog
+
+- **v1.2.0** — doors self-heal their appearance (every tap and a background pass near players);
+  pose rules re-calibrated against all eight orientations; console tools `gmsd:selftest`,
+  `gmsd:inspect`, `gmsd:flipmirror`, `gmsd:setmirror`, `gmsd:fixlist` for per-door corrections.
+- **v1.0.0** — first public release.
 
 ## Compatibility notes
 
