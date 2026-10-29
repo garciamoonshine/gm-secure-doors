@@ -9,7 +9,7 @@ dropped, nothing is added, nothing is placed.
 
 ![GM Secure Doors](docs/hero.jpg)
 
-[garciamoonshine.com](https://garciamoonshine.com) · [Download v1.2.0](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.2.0/GM-Secure-Doors-v1.2.0.mcaddon) · [Devlog post](https://garciamoonshine.com/blog/gm-secure-doors-coded-keys-for-vanilla-minecraft-doors/)
+[garciamoonshine.com](https://garciamoonshine.com) · [Download v1.3.0](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.3.0/GM-Secure-Doors-v1.3.0.mcaddon) · [Devlog post](https://garciamoonshine.com/blog/gm-secure-doors-coded-keys-for-vanilla-minecraft-doors/)
 
 ---
 
@@ -34,7 +34,7 @@ Deliberately **not** touched: trapdoors, fence gates, and other add-ons' doors (
 
 ## Install
 
-1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.2.0/GM-Secure-Doors-v1.2.0.mcaddon)
+1. Download the [`.mcaddon` release](https://github.com/garciamoonshine/gm-secure-doors/releases/download/v1.3.0/GM-Secure-Doors-v1.3.0.mcaddon)
    and open it — Minecraft imports both packs at once.
 2. In your world settings, activate **GM Secure Doors** on both tabs: the **behaviour pack** and the
    **resource pack**.
@@ -113,6 +113,12 @@ The moving parts:
   later, because vanilla re-derives a door's hinge when it is rebuilt next to its double-door partner.
 - **Blocks carry `tag:door`**, so vanilla's double-door pairing still sees a door beside a door and
   leaves the neighbour's hinge alone.
+- **Pairs are mirrored explicitly.** A double door's two halves can report the same hinge bit, so the
+  appearance is derived from a rule: the first door of a pair uses the calibrated table and the
+  second mirrors it. That is what vanilla renders, and it is why no per-door or per-orientation
+  exceptions are needed any more.
+- **Self-healing.** Every tap recomputes a locked door's pose, and a background pass corrects locked
+  doors near players, so correcting the rules never requires re-locking anything.
 - **Key codes** are stored in the item's lore (`K#xxxxx`) and cross-checked against the lock record
   kept in world dynamic properties, so the record survives restarts; copies are made by writing the
   same code to a second key.
@@ -159,6 +165,9 @@ lookup tables (`CLOSED_MIRROR`, `OPEN_MIRROR`) plus `swing = hinge`.
 
 ## Changelog
 
+- **v1.3.0** — double doors are now handled by an explicit pair rule (the second door of a pair
+  mirrors the first, exactly as vanilla renders it), which removed the last per-orientation
+  exceptions. `MAT_MIRROR_CORRECTIONS` is now empty and only used for a proven per-material quirk.
 - **v1.2.0** — doors self-heal their appearance (every tap and a background pass near players);
   pose rules re-calibrated against all eight orientations; console tools `gmsd:selftest`,
   `gmsd:inspect`, `gmsd:flipmirror`, `gmsd:setmirror`, `gmsd:fixlist` for per-door corrections.

@@ -295,6 +295,29 @@ function handleSecureTap(player, block) {
 }
 
 
+
+/* ---- pair rule -------------------------------------------------------------------------
+   Vanilla renders the two doors of a double-door pair as mirror images, but the hinge bits we
+   can read off a door are not reliable enough to reproduce that (both halves of a real pair can
+   report the same bit). So: if a locked door has a locked neighbour of the same cardinal and the
+   same height, the pair is forced to be mirror images - the lower coordinate keeps its computed
+   value and the higher one takes the inverse. Deterministic, so it cannot oscillate. */
+function pairPose(dimId, x, y, z, pose, db, mat, cardinal) {
+    // the lock store is keyed "dim|x,y,z" (see keyOf)
+    const recAt = (cx, cz) => db[`${dimId}|${cx},${y},${cz}`]
+                         || db[`${dimId}|${cx},${y + 1},${cz}`]
+                         || db[`${dimId}|${cx},${y - 1},${cz}`];
+    // partners sit side by side along the panel plane and must be the SAME material and facing
+    const partners = (cand) => cand && cand.mat === mat && cand.cardinal === cardinal;
+    const first = partners(recAt(x - 1, z)) ? recAt(x - 1, z)
+                : partners(recAt(x, z - 1)) ? recAt(x, z - 1)
+                : undefined;
+    if (!first) return pose;                       // first of the pair keeps its own value
+    const firstPose = withFixes(computePose(first.mat, first.cardinal, first.hinge === true),
+                                `${dimId}|${x - 1},${y},${z}`);
+    return { ...pose, mirror: !firstPose.mirror };  // second of the pair mirrors the first
+}
+
 /* ------------------------------------------------------------------ appearance rules
    Closed panel sits on R(cardinal). The mirror table below was calibrated in game against
    eight vanilla oak doors covering every cardinal/hinge combination, then checked against all
@@ -304,14 +327,26 @@ function handleSecureTap(player, block) {
 const CLOSED_MIRROR = { north: { f: false, t: true },  east: { f: true, t: true },
                         south: { f: true, t: false }, west: { f: false, t: true } };
 const OPEN_MIRROR = { north: false, east: false, south: true, west: true };
+/* Per-material mirror corrections, in the form "<cardinal>|<f|t>".
+   Each entry means: this material needs the opposite of the base table for that orientation.
+   These come from in-game verification, one door at a time, and apply to every future door of
+   the same material + orientation automatically. */
+const MAT_MIRROR_CORRECTIONS = {
+    // Verified in game, one door at a time. Key format: "<cardinal>|<f|t>".
+    // Currently empty: every material matches the base table, and the two doors of a pair are
+    // handled by pairPose() (second door mirrors the first). Add entries only when a specific
+    // material+orientation is proven wrong in game.
+};
+
+
 function computePose(mat, cardinal, hinge) {
     const hingeOn = hinge === true;
-    // Measured on this build's texture source (vanilla atlas references): of the eight spruce
-    // orientations, only east-facing hinge=true needs the material flip; everything else must
-    // use the oak-calibrated table unchanged.
+    const cell = `${cardinal}|${hingeOn ? "t" : "f"}`;
+    // measured: only east-facing hinge=true needs the generic non-oak flip
     const matFlip = mat !== "oak" && cardinal === "east" && hingeOn;
+    const matCorrection = MAT_MIRROR_CORRECTIONS[mat]?.[cell] === true;
     return {
-        mirror: (CLOSED_MIRROR[cardinal]?.[hingeOn ? "t" : "f"] ?? true) !== matFlip,
+        mirror: ((CLOSED_MIRROR[cardinal]?.[hingeOn ? "t" : "f"] ?? true) !== matFlip) !== matCorrection,
         omirror: OPEN_MIRROR[cardinal] ?? false,
         swing: hingeOn,
     };
@@ -370,7 +405,10 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         // oak uses the vanilla "door_wood_*" texture; every other material uses
         // "door_<material>_*" which is drawn mirrored relative to it - so non-oak doors need
         // the opposite closed-pose flip (measured on spruce/iron; open pose is unaffected)
-        const pose = withFixes(computePose(mat, cardinal, hingeVal), doorTuneKey(low));
+        const pose = pairPose(block.dimension.id, Math.floor(low.location.x), Math.floor(low.location.y),
+                              Math.floor(low.location.z),
+                              withFixes(computePose(mat, cardinal, hingeVal), doorTuneKey(low)),
+                              db, mat, cardinal);
         const mirrorDefault = pose.mirror, omirrorDefault = pose.omirror, swingDefault = pose.swing;
         const tune = readTune()[doorTuneKey(low)] || {};
         const meta = { code, mat, cardinal, dir: rotate(cardinal, rotOf()), legacyDir: legacy,
@@ -515,7 +553,11 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     const ids = Object.keys(db);
     if (ev.id === "gmsd:list") {
         console.warn(`[GMSD] locked doors: ${ids.length}`);
-        for (const i of ids) console.warn(`[GMSD]   ${i} -> ${db[i].code}`);
+        for (const i of ids) {
+            const r = db[i] || {};
+            // only the lower half, with everything needed to describe the door
+            console.warn(`[GMSD]   ${i} mat=${r.mat} cardinal=${r.cardinal} hinge=${r.hinge} mirror=${r.mirror} swing=${r.swing} omirror=${r.omirror}`);
+        }
         return;
     }
     const r = Math.max(1, Math.min(64, parseInt((ev.message || "8").trim(), 10) || 8));
@@ -630,6 +672,19 @@ function applyPoseToDoor(dimId, c, pose) {
     } catch { return false; }
 }
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    if (ev.id === "gmsd:clearfix") {
+        const parts0 = (ev.message || "").trim().split(/\s+/).filter((x) => /^-?\d+$/.test(x)).map(Number);
+        const fixes0 = readFixes();
+        let removed = 0;
+        for (const k of Object.keys(fixes0)) {
+            const cc = k.split("|")[0].split(",").map(Number);
+            if (parts0.length >= 3 && !(cc[0] === parts0[0] && cc[1] === parts0[1] && cc[2] === parts0[2])) continue;
+            delete fixes0[k]; removed++;
+        }
+        writeFixes(fixes0);
+        console.warn(`[GMSD] cleared ${removed} hardcoded fix(es)`);
+        return;
+    }
     if (ev.id !== "gmsd:setmirror" && ev.id !== "gmsd:flipmirror" && ev.id !== "gmsd:fixlist") return;
     const fixes = readFixes();
 
@@ -690,7 +745,9 @@ function healDoor(dimId, c, rec) {
         const b = dim.getBlock({ x: c[0], y: c[1], z: c[2] });
         if (!b || !mine(b)) return false;
         if (st(b, NS + ":upper") === true) return false;               // lower half only
-        const pose = withFixes(computePose(rec.mat, rec.cardinal, rec.hinge === true), `${c[0]},${c[1]},${c[2]}|${dimId}`);
+        const dbNow = store();
+        const basePose = withFixes(computePose(rec.mat, rec.cardinal, rec.hinge === true), `${c[0]},${c[1]},${c[2]}|${dimId}`);
+        const pose = pairPose(dimId, c[0], c[1], c[2], basePose, dbNow, rec.mat, rec.cardinal);
         let changed = false;
         for (const half of minePair(b)) {
             const cur = { m: st(half, NS + ":mirror") === true, s: st(half, NS + ":swing") === true, o: st(half, NS + ":omirror") === true };
@@ -713,7 +770,7 @@ system.runInterval(() => {
     if (!ids.length) return;
     let fixed = 0;
     for (const id of ids) {
-        if (fixed >= 4) break;                                        // stay cheap
+        if (fixed >= 16) break;                                       // whole areas per pass
         const parts = id.split("|");
         const dimId = parts[0];
         const c = parts[1].split(",").map(Number);
@@ -723,8 +780,28 @@ system.runInterval(() => {
             return Math.abs(l.x - c[0]) <= 48 && Math.abs(l.z - c[2]) <= 48 && Math.abs(l.y - c[1]) <= 24;
         });
         if (!near) continue;
-        if (healDoor(dimId, c, db[id])) { fixed++; console.warn(`[GMSD] self-heal ${parts[1]}`); }
+        if (healDoor(dimId, c, db[id])) { fixed++; }
     }
-}, 60);
+    if (fixed) console.warn(`[GMSD] self-heal: corrected ${fixed} door(s)`);
+}, 40);
+
+
+/* scriptevent gmsd:repaintall  -> re-apply poses to every locked door in loaded chunks */
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    if (ev.id !== "gmsd:repaintall") return;
+    const db = store();
+    const seen = new Set();
+    let done = 0, skipped = 0;
+    for (const id of Object.keys(db)) {
+        const parts = id.split("|");
+        const dimId = parts[0];
+        const c = parts[1].split(",").map(Number);
+        const lowerKey = `${c[0]},${c[1]},${c[2]}|${dimId}`;
+        if (seen.has(lowerKey)) continue;
+        seen.add(lowerKey);
+        if (healDoor(dimId, c, db[id])) done++; else skipped++;
+    }
+    console.warn(`[GMSD] repaintall: corrected ${done}, unchanged/unloaded ${skipped}`);
+}, { namespaces: ["gmsd"] });
 
 console.warn("[GMSD] GM Secure Doors ready - vanilla doors only, QB Doors untouched.");
